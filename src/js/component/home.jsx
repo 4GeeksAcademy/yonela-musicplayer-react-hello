@@ -1,26 +1,68 @@
-import React from "react";
+import React, { useState, useEffect } from 'react';
+import Sidebar from './sidebar';
+import Playlist from './playlist';
+import PlayerControls from './playercontrols';
 
-//include images into your bundle
-import rigoImage from "../../img/rigo-baby.jpg";
+function Home() {
+  const [playlists, setPlaylists] = useState([]);
+  const [selectedPlaylistIndex, setSelectedPlaylistIndex] = useState(null);
+  const [currentTrackUrl, setCurrentTrackUrl] = useState(null);
 
-//create your first component
-const Home = () => {
-	return (
-		<div className="text-center">
-			<h1 className="text-center mt-5">Hello Rigo!</h1>
-			<p>
-				<img src={rigoImage} />
-			</p>
-			<a href="#" className="btn btn-success">
-				If you see this green button... bootstrap is working...
-			</a>
-			<p>
-				Made by{" "}
-				<a href="http://www.4geeksacademy.com">4Geeks Academy</a>, with
-				love!
-			</p>
-		</div>
-	);
-};
+  useEffect(() => {
+    fetch('https://playground.4geeks.com/sound/all')
+      .then(response => response.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          const groupedPlaylists = [{ playlistName: 'All Songs', tracks: data }];
+          setPlaylists(groupedPlaylists);
+        } else if (data.songs && Array.isArray(data.songs)) {
+          const groupedPlaylists = [{ playlistName: 'All Songs', tracks: data.songs }];
+          setPlaylists(groupedPlaylists);
+        } else {
+          console.error('Unexpected data format:', data);
+        }
+      })
+      .catch(error => {
+        console.error('Error al obtener las canciones:', error);
+      });
+  }, []);
+
+  const handleSelectPlaylist = (index) => {
+    setSelectedPlaylistIndex(index);
+    setCurrentTrackUrl(null);
+  };
+
+  const handleSelectTrack = (trackUrl) => {
+    if (trackUrl) {
+      const fullTrackUrl = `https://playground.4geeks.com${trackUrl}`;
+      console.log("Full track URL:", fullTrackUrl);
+      setCurrentTrackUrl(fullTrackUrl);
+    } else {
+      console.error("The track URL is undefined.");
+    }
+  };
+
+  const handleTrackChange = (newTrackUrl) => {
+    setCurrentTrackUrl(`https://playground.4geeks.com${newTrackUrl}`);
+  };
+
+  return (
+    <div className="home">
+      <Sidebar playlists={playlists} onSelectPlaylist={handleSelectPlaylist} />
+      {selectedPlaylistIndex !== null && (
+        <Playlist
+          tracks={playlists[selectedPlaylistIndex].tracks}
+          onSelectTrack={handleSelectTrack}
+        />
+      )}
+      <PlayerControls
+        currentTrackUrl={currentTrackUrl}
+        tracks={playlists[selectedPlaylistIndex]?.tracks || []}
+        onTrackChange={handleTrackChange}
+
+      />
+    </div>
+  );
+}
 
 export default Home;
